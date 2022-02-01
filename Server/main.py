@@ -6,4 +6,5 @@ if __name__ == "__main__":
     local_ip = socket.gethostbyname(hostname)
     print(f"The Server IP Address is: {local_ip}")
     print(f"The Hostname is: {hostname}")
-    
+    print(f"\nWould you like to setup the Chat on this IP Address ({local_ip})?")
+
