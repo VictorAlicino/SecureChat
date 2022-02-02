@@ -1,18 +1,48 @@
+import pickle
 import socket
+import time
+from datetime import datetime
 import select
 import sys
-import _thread
+from _thread import *
+
+
+class ChatPayload:
+    message_time = datetime.now()  # Time when the message was sent
+    to_ip = None  # Receiver IP
+    by = None  # Sender Name
+    raw_byte = None  # Raw bytes payload
+    format_name = None  # Raw Bytes format
+    text_payload = None  # Text payload
+
+
+def timer():
+    app_time = time.time()
+    while True:
+        new_time = time.time()
+        if new_time - app_time > 120:
+            print(f"[{datetime.now()}] Server On")
+            app_time = new_time
 
 
 class Chat:
     def __init__(self, ip_address: str, port: int):
+        # Setting variables
+        self._ip_address = ip_address
+        self._port = port
         self._list_of_clients = []
         self._connection = None
+
+        print(f"[{datetime.now()}] Starting Server")
         self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+        print(f"[{datetime.now()}] Binding IP and Port")
         self._server.bind((ip_address, port))
+
+        print(f"[{datetime.now()}] Listening on port: {self._port}")
         self._server.listen(100)
+        print(f"[{datetime.now()}] Server Started")
 
     """Using the below function, we broadcast the message to all
     clients who's object is not the same as the one sending
@@ -29,9 +59,11 @@ class Chat:
                     # if the link is broken, we remove the client
                     self._remove(clients)
 
-    def _client_thread(self, connection, addr):
+    def client_thread(self, connection, addr):
         # sends a message to the client whose user object is conn
-        connection.send("Welcome to this chatroom!")
+        msg = ChatPayload()
+        msg.text_payload = "Bem Vindo ao Chat"
+        connection.send(pickle.dumps(msg))
 
         while True:
             try:
@@ -51,7 +83,6 @@ class Chat:
                     """message may have no content if the connection
                     is broken, in this case we remove the connection"""
                     self._remove(connection)
-
             except:
                 continue
 
@@ -62,3 +93,30 @@ class Chat:
     def _remove(self, connection):
         if connection in self._list_of_clients:
             self._list_of_clients.remove(connection)
+
+    def loop(self):
+        print(f"[{datetime.now()}] Server On")
+        start_new_thread(timer, ())
+        while True:
+            """Accepts a connection request and stores two parameters,
+                conn which is a socket object for that user, and addr
+                which contains the IP address of the client that just
+                connected"""
+            self._connection, address = self._server.accept()
+
+            """Maintains a list of clients for ease of broadcasting
+            a message to all available people in the chatroom"""
+            self._list_of_clients.append(self._connection)
+
+            # prints the address of the user that just connected
+            print(f"[{datetime.now()}] {address[0]} connection has been established")
+
+            # creates and individual thread for every user
+            # that connects
+            start_new_thread(self._client_thread, (self._connection, address))
+
+    def __del__(self):
+        self._connection.close()
+        print(f"[{datetime.now()}] Connection Closed")
+        self._server.close()
+        print(f"[{datetime.now()}] Server Closed")
