@@ -22,5 +22,6 @@ class ChatClient:
     def loop(self):
         while True:
             msg = self._server.recv(4096)
+            print(msg)
             temp = pickle.loads(msg)
             print(temp)

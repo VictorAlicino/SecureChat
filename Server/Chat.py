@@ -59,7 +59,7 @@ class Chat:
                     # if the link is broken, we remove the client
                     self._remove(clients)
 
-    def client_thread(self, connection, addr):
+    def _client_thread(self, connection, addr):
         # sends a message to the client whose user object is conn
         msg = ChatPayload()
         msg.text_payload = "Bem Vindo ao Chat"
