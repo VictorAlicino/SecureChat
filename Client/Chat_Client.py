@@ -15,4 +15,4 @@ class ChatClient:
         while True:
             received_bytes = self._server.recv(4096)
             received_object = pickle.loads(received_bytes)
-            print(received_object.text_payload)
+            print(f"[{received_object.message_time}] <<{received_object.by}>> {received_object.text_payload}")
