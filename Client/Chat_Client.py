@@ -3,15 +3,7 @@ import select
 import sys
 import pickle
 from datetime import datetime
-
-
-class ChatPayload:
-    message_time = datetime.now()  # Time when the message was sent
-    to_ip = None  # Receiver IP
-    by = None  # Sender Name
-    raw_byte = None  # Raw bytes payload
-    format_name = None  # Raw Bytes format
-    text_payload = None  # Text payload
+from ChatPayload import ChatPayload
 
 
 class ChatClient:
@@ -21,7 +13,6 @@ class ChatClient:
 
     def loop(self):
         while True:
-            msg = self._server.recv(4096)
-            print(msg)
-            temp = pickle.loads(msg)
-            print(temp)
+            received_bytes = self._server.recv(4096)
+            received_object = pickle.loads(received_bytes)
+            print(received_object.text_payload)

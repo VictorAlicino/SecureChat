@@ -2,18 +2,12 @@ import pickle
 import socket
 import time
 from datetime import datetime
+from ChatPayload import ChatPayload
 import select
 import sys
 from _thread import *
 
 
-class ChatPayload:
-    message_time = datetime.now()  # Time when the message was sent
-    to_ip = None  # Receiver IP
-    by = None  # Sender Name
-    raw_byte = None  # Raw bytes payload
-    format_name = None  # Raw Bytes format
-    text_payload = None  # Text payload
 
 
 def timer():
@@ -33,7 +27,7 @@ class Chat:
         self._list_of_clients = []
         self._connection = None
 
-        print(f"[{datetime.now()}] Starting Server")
+        print(f"[{datetime.now()}] Starting Server on {self._ip_address}")
         self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -63,6 +57,7 @@ class Chat:
         # sends a message to the client whose user object is conn
         msg = ChatPayload()
         msg.text_payload = "Bem Vindo ao Chat"
+        print(msg)
         connection.send(pickle.dumps(msg))
 
         while True:
