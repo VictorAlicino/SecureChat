@@ -57,7 +57,7 @@ class Chat:
         # sends a message to the client whose user object is conn
         msg = ChatPayload()
         msg.text_payload = "Bem Vindo ao Chat"
-        print(msg)
+        msg.by = "Server"
         connection.send(pickle.dumps(msg))
 
         while True:

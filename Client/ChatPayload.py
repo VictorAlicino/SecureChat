@@ -2,7 +2,7 @@ from datetime import datetime
 
 
 class ChatPayload:
-    message_time = datetime.now()  # Time when the message was sent
+    message_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # Time when the message was sent
     to_ip = None  # Receiver IP
     by = None  # Sender Name
     raw_byte = None  # Raw bytes payload
