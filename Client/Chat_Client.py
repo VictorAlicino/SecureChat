@@ -16,3 +16,9 @@ class ChatClient:
             received_bytes = self._server.recv(4096)
             received_object = pickle.loads(received_bytes)
             print(f"[{received_object.message_time}] <<{received_object.by}>> {received_object.text_payload}")
+
+            msg = ChatPayload()
+            msg.text_payload = "Obrigado!"
+            msg.by = socket.gethostname()
+            self._server.send(pickle.dumps(msg))
+
