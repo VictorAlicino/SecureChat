@@ -8,8 +8,6 @@ import sys
 from _thread import *
 
 
-
-
 def timer():
     app_time = time.time()
     while True:
@@ -19,37 +17,32 @@ def timer():
             app_time = new_time
 
 
-class Chat:
+class Server:
     def __init__(self, ip_address: str, port: int):
         # Setting variables
         self._ip_address = ip_address
         self._port = port
-        self._list_of_clients = []
+        self._list_of_clients = {}  # Dictionary
         self._connection = None
 
         print(f"[{datetime.now()}] Starting Server on {self._ip_address}")
-        self._server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         print(f"[{datetime.now()}] Binding IP and Port")
-        self._server.bind((ip_address, port))
+        self._socket.bind((ip_address, port))
 
         print(f"[{datetime.now()}] Listening on port: {self._port}")
-        self._server.listen(100)
+        self._socket.listen(100)
         print(f"[{datetime.now()}] Server Started")
 
-    """Using the below function, we broadcast the message to all
-    clients who's object is not the same as the one sending
-    the message """
-
+    # Broadcast a message to all clients
     def _broadcast(self, message, connection):
-        for clients in self._list_of_clients:
-            if clients != connection:
+        for clients in list(self._list_of_clients.values()):
                 try:
                     clients.send(message)
                 except:
                     clients.close()
-
                     # if the link is broken, we remove the client
                     self._remove(clients)
 
@@ -83,11 +76,12 @@ class Chat:
 
     """The following function simply removes the object
     from the list that was created at the beginning of
-    the program"""
+    the program
 
     def _remove(self, connection):
         if connection in self._list_of_clients:
             self._list_of_clients.remove(connection)
+            """
 
     def loop(self):
         print(f"[{datetime.now()}] Server On")
@@ -97,7 +91,7 @@ class Chat:
                 conn which is a socket object for that user, and addr
                 which contains the IP address of the client that just
                 connected"""
-            self._connection, address = self._server.accept()
+            self._connection, address = self._socket.accept()
 
             """Maintains a list of clients for ease of broadcasting
             a message to all available people in the chatroom"""
@@ -113,5 +107,5 @@ class Chat:
     def __del__(self):
         self._connection.close()
         print(f"[{datetime.now()}] Connection Closed")
-        self._server.close()
+        self._socket.close()
         print(f"[{datetime.now()}] Server Closed")
