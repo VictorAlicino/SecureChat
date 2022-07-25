@@ -6,7 +6,6 @@ if __name__ == "__main__":
     print("Welcome to secure Chat Server by Alicino")
     target_ip = None
     target_port = None
-    available_ports = []
 
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
