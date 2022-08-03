@@ -1,9 +1,6 @@
 import socket
-import select
-import sys
 import pickle
-from datetime import datetime
-from ChatPayload import ChatPayload
+from Model.ChatPayload import ChatPayload
 
 
 class ChatClient:

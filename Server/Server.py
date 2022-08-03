@@ -1,5 +1,6 @@
 import pickle
 import socket
+import threading
 import time
 from datetime import datetime
 from ChatPayload import ChatPayload
@@ -60,7 +61,7 @@ class Server:
                 # if the link is broken, we remove the client
                 self._remove(clients)
 
-    def _receive(self):
+    def receive(self):
         while True:
             # Build a "new user"
             new_user = User(self._socket.accept(), datetime.now())
@@ -82,6 +83,9 @@ class Server:
                   f"IP Address:\t{new_user.address}\n"
                   f"Joined at:\t{new_user.connected_since()}")
 
+            thread = threading.Thread(target=self._handle, args=(new_user,))
+            thread.start()
+
     def _handle(self, client):
         while True:
             try:
@@ -90,6 +94,7 @@ class Server:
 
                 message = recv_payload.get_message()
                 print(f"[datetime.now()] User {recv_payload.by} says {recv_payload.get_message()}")
+                self._broadcast(message)
             except Exception as e:
                 print(f"[{datetime.now()}] Exception Detected: {e}")
                 # TODO: Disconnect client from server

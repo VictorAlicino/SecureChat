@@ -2,17 +2,17 @@ from datetime import datetime
 
 
 class ChatPayload:
-    message_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # Time when the message was sent
+    def __int__(self, by: str, to: str, message: str):
+        self.by = by
+        self.to_ip = to
+        self.text_payload = message
+
+    message_time = None  # Time when the message was sent, please use "datetime.now().strftime("%d/%m/%Y %H:%M:%S")"
     to_ip = None  # Receiver IP
     by = None  # Sender Name
     raw_byte = None  # Raw bytes payload
     format_name = None  # Raw Bytes format
     text_payload = None  # Text payload
-
-    def __int__(self, by: str, to: str, message: str):
-        self.by = by
-        self.to_ip = to
-        self.text_payload = message
 
     @classmethod
     def send_bytes(cls, by: str, to: str, bytes_to_send: bytes):

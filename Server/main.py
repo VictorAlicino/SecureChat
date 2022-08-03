@@ -22,5 +22,5 @@ if __name__ == "__main__":
     target_port = int(input("Which Port the application will run on: "))
 
     server = Server(local_ip, target_port)
-    server.loop()
+    server.receive()
 
