@@ -9,6 +9,18 @@ import sys
 from _thread import *
 
 
+class TextColors:
+    HEADER = '\033[95m'
+    OK_BLUE = '\033[94m'
+    OK_CYAN = '\033[96m'
+    OK_GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    END_C = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 def timer():
     app_time = time.time()
     while True:
@@ -26,16 +38,16 @@ class Server:
         self._list_of_clients = []
         self._connection = None
 
-        print(f"[{datetime.now()}] Starting Server on {self._ip_address}")
+        print(f"{TextColors.OK_CYAN}[{datetime.now()}] Starting Server on {self._ip_address}")
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        print(f"[{datetime.now()}] Binding IP and Port")
+        print(f"{TextColors.END_C}[{datetime.now()}] Binding IP and Port")
         self._socket.bind((ip_address, port))
 
-        print(f"[{datetime.now()}] Listening on port: {self._port}")
+        print(f"{TextColors.OK_CYAN}[{datetime.now()}] Listening on port: {self._port}")
         self._socket.listen(100)
-        print(f"[{datetime.now()}] Server Started")
+        print(f"{TextColors.END_C}[{datetime.now()}] Server Started")
 
     # Broadcast a message to all clients
     def _broadcast(self, message):
