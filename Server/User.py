@@ -1,6 +1,6 @@
 import pickle
 from datetime import datetime
-from ChatPayload import ChatPayload
+from Controllers.ChatPayload import ChatPayload
 
 
 class User:

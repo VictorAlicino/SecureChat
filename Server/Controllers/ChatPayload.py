@@ -6,6 +6,7 @@ class ChatPayload:
         self.by = by
         self.to_ip = to
         self.text_payload = message
+        self.username = None
 
     message_time = None  # Time when the message was sent, please use "datetime.now().strftime("%d/%m/%Y %H:%M:%S")"
     to_ip = None  # Receiver IP

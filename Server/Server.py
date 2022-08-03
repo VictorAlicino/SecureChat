@@ -3,10 +3,8 @@ import socket
 import threading
 import time
 from datetime import datetime
-from ChatPayload import ChatPayload
+from Controllers.ChatPayload import ChatPayload
 from User import User
-import select
-import sys
 from _thread import *
 
 
@@ -51,36 +49,35 @@ class Server:
         print(f"{TextColors.END_C}[{datetime.now()}] Server Started")
 
     # Broadcast a message to all clients
-    def _broadcast(self, message):
-        for clients in list(self._list_of_clients.values()):
+    def _broadcast(self, payload: ChatPayload):
+        for client in self._list_of_clients:
             try:
-                clients.send(message)
+                client.send(pickle.dumps(payload))
             except Exception as e:
                 print(f"[{datetime.now()}] Exception Detected: {e}")
-                clients.close()
-                # if the link is broken, we remove the client
-                self._remove(clients)
+                continue
 
     def receive(self):
         while True:
             # Build a "new user"
-            new_user = User(self._socket.accept(), datetime.now())
-            print(f"[{datetime.now()}] Connected with: {new_user.address}")
+            connection = self._socket.accept()
+            new_user = User(connection, datetime.now())
+            print(f"[{datetime.now()}] Connected with: {new_user.address[0]}:{new_user.address[1]}")
 
             payload = ChatPayload()
             payload.by = "Server"
-            payload.text_payload = "Digite seu nome:"
+            payload.text_payload = "Welcome to the Chat"
             payload = new_user.send(payload)
 
             recv_payload = new_user.connection.recv(2048)
             recv_payload = pickle.loads(recv_payload)
 
-            new_user.nickname = recv_payload.get_message()
+            new_user.nickname = recv_payload.username
             self._list_of_clients.append(new_user)
 
             print(f"[{datetime.now()}] A new user has joined the server:\n"
                   f"User:\t{new_user.nickname}\n"
-                  f"IP Address:\t{new_user.address}\n"
+                  f"IP Address:\t{new_user.address[0]}\n"
                   f"Joined at:\t{new_user.connected_since()}")
 
             thread = threading.Thread(target=self._handle, args=(new_user,))
@@ -89,12 +86,12 @@ class Server:
     def _handle(self, client):
         while True:
             try:
-                recv_payload = client.recv(2048)
+                recv_payload = client.connection.recv(2048)
                 recv_payload = pickle.loads(recv_payload)
 
                 message = recv_payload.get_message()
-                print(f"[datetime.now()] User {recv_payload.by} says {recv_payload.get_message()}")
-                self._broadcast(message)
+                print(f"[{datetime.now()}] User {recv_payload.username} says: {recv_payload.get_message()}")
+                self._broadcast(recv_payload)
             except Exception as e:
                 print(f"[{datetime.now()}] Exception Detected: {e}")
                 # TODO: Disconnect client from server
@@ -160,7 +157,10 @@ class Server:
             start_new_thread(self._client_thread, (self._connection, address))
 
     def __del__(self):
-        self._connection.close()
-        print(f"[{datetime.now()}] Connection Closed")
-        self._socket.close()
-        print(f"[{datetime.now()}] Server Closed")
+        try:
+            self._connection.close()
+            print(f"[{datetime.now()}] Connection Closed")
+            self._socket.close()
+            print(f"[{datetime.now()}] Server Closed")
+        except Exception as e:
+            print(f"[{datetime.now()}] Exception Detected: {e}")
