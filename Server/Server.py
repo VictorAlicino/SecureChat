@@ -38,7 +38,7 @@ class Server:
         print(f"[{datetime.now()}] Server Started")
 
     # Broadcast a message to all clients
-    def _broadcast(self, message, connection):
+    def _broadcast(self, message):
         for clients in list(self._list_of_clients.values()):
             try:
                 clients.send(message)
@@ -59,16 +59,29 @@ class Server:
             payload.text_payload = "Digite seu nome:"
             payload = new_user.send(payload)
 
-            rec_payload = new_user.connection.recv(2048)
-            rec_payload = pickle.loads(rec_payload)
+            recv_payload = new_user.connection.recv(2048)
+            recv_payload = pickle.loads(recv_payload)
 
-            new_user.nickname = rec_payload.get_message()
+            new_user.nickname = recv_payload.get_message()
             self._list_of_clients.append(new_user)
 
             print(f"[{datetime.now()}] A new user has joined the server:\n"
                   f"User:\t{new_user.nickname}\n"
                   f"IP Address:\t{new_user.address}\n"
                   f"Joined at:\t{new_user.connected_since()}")
+
+    def _handle(self, client):
+        while True:
+            try:
+                recv_payload = client.recv(2048)
+                recv_payload = pickle.loads(recv_payload)
+
+                message = recv_payload.get_message()
+                print(f"[datetime.now()] User {recv_payload.by} says {recv_payload.get_message()}")
+            except Exception as e:
+                print(f"[{datetime.now()}] Exception Detected: {e}")
+                # TODO: Disconnect client from server
+                break
 
     def _client_thread(self, connection, addr):
         # sends a message to the client whose user object is conn
@@ -89,7 +102,7 @@ class Server:
 
                     # Calls broadcast function to send message to all
                     message_to_send = "<" + addr[0] + "> " + message
-                    self._broadcast(message_to_send, connection)
+                    self._broadcast(message_to_send)
 
                 else:
                     """message may have no content if the connection
