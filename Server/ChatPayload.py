@@ -6,8 +6,8 @@ class ChatPayload:
         self.by = by
         self.to_ip = to
         self.text_payload = message
-        self.username = None
 
+    username = None # Sender Username
     message_time = None  # Time when the message was sent, please use "datetime.now().strftime("%d/%m/%Y %H:%M:%S")"
     to_ip = None  # Receiver IP
     by = None  # Sender Name
@@ -23,3 +23,14 @@ class ChatPayload:
 
     def get_message(self):
         return str(self.text_payload)
+
+    def __str__(self):
+        return f"Payload -----------\n" \
+               f"\tSender:          {self.by}\n" \
+               f"\tReceiver:        {self.to_ip}\n" \
+               f"\tSender Username: {self.username}\n" \
+               f"\tTime:            {self.message_time}\n" \
+               f"\tMessage:         {self.text_payload}\n\n" \
+               f"\tFormat Name:     {self.format_name}\n" \
+               f"\tRaw Bytes:       {self.raw_byte}\n" \
+               f"Payload -----------"

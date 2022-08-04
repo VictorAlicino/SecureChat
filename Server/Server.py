@@ -3,7 +3,7 @@ import socket
 import threading
 import time
 from datetime import datetime
-from Controllers.ChatPayload import ChatPayload
+from ChatPayload import ChatPayload
 from User import User
 from _thread import *
 
@@ -29,12 +29,28 @@ def timer():
             app_time = new_time
 
 
+def process_received_message(msg: str):
+    if msg.startswith("/help "):
+        return 1
+    if msg.startswith("/disconnect "):
+        return 2
+    if msg.startswith("/users "):
+        return 3
+    if msg.startswith("/connectwith "):
+        return 4
+    else:
+        return 0
+
+
+verbose_mode = False
+
+
 class Server:
     def __init__(self, ip_address: str, port: int):
         # Setting variables
         self._ip_address = ip_address
         self._port = port
-        self._list_of_clients = []
+        self._list_of_clients = {}
         self._connection = None
 
         print(f"{TextColors.OK_CYAN}[{datetime.now()}] Starting Server on {self._ip_address}")
@@ -48,15 +64,6 @@ class Server:
         self._socket.listen(100)
         print(f"{TextColors.END_C}[{datetime.now()}] Server Started")
 
-    # Broadcast a message to all clients
-    def _broadcast(self, payload: ChatPayload):
-        for client in self._list_of_clients:
-            try:
-                client.send(pickle.dumps(payload))
-            except Exception as e:
-                print(f"[{datetime.now()}] Exception Detected: {e}")
-                continue
-
     def receive(self):
         while True:
             # Build a "new user"
@@ -66,95 +73,92 @@ class Server:
 
             payload = ChatPayload()
             payload.by = "Server"
-            payload.text_payload = "Welcome to the Chat"
+            payload.username = "Server"
+            payload.text_payload = "[Ready to Broadcast]\nType /help for help"
             payload = new_user.send(payload)
 
             recv_payload = new_user.connection.recv(2048)
             recv_payload = pickle.loads(recv_payload)
 
-            new_user.nickname = recv_payload.username
-            self._list_of_clients.append(new_user)
+            new_user.username = recv_payload.username
+            new_user.hostname = recv_payload.by
+            self._list_of_clients[new_user.username] = new_user
 
             print(f"[{datetime.now()}] A new user has joined the server:\n"
-                  f"User:\t{new_user.nickname}\n"
-                  f"IP Address:\t{new_user.address[0]}\n"
-                  f"Joined at:\t{new_user.connected_since()}")
+                  f"User:       {new_user.username}\n"
+                  f"IP Address: {new_user.address[0]}\n"
+                  f"Joined at:  {new_user.connected_since()}")
+            print(f"[{datetime.now()}] System <<{recv_payload.by}>> --> [{recv_payload.get_message()}]")
 
             thread = threading.Thread(target=self._handle, args=(new_user,))
             thread.start()
 
-    def _handle(self, client):
+    def _handle(self, client: User):
         while True:
             try:
                 recv_payload = client.connection.recv(2048)
                 recv_payload = pickle.loads(recv_payload)
+                if verbose_mode:
+                    print(recv_payload)
 
+                recv_payload.username = client.username
                 message = recv_payload.get_message()
-                print(f"[{datetime.now()}] User {recv_payload.username} says: {recv_payload.get_message()}")
-                self._broadcast(recv_payload)
+
+                if process_received_message(message) == 3:
+                    self._send_list_of_users(client)
+                    print(f"[{datetime.now()}] Sending list of users to {client.hostname}@{client.address[0]} "
+                          f"aka {client.username}")
+                if process_received_message(message) == 4:
+                    user_to_connect_with = message.split(" ")[1]
+                    self._conn_with_user(client, user_to_connect_with)
+                    print(f"[{datetime.now()}] Connecting {client.hostname} with user_to_connect_with"
+                          f"aka {client.username}")
+                else:
+                    print(f"[{datetime.now()}] User {recv_payload.username} says: {recv_payload.get_message()}")
+
+                #self._broadcast(recv_payload)
             except Exception as e:
-                print(f"[{datetime.now()}] Exception Detected: {e}")
+                print(f"{TextColors.WARNING}[{datetime.now()}] Exception Detected: {e}")
+                print(f"[{datetime.now()}] A user has disconnected:\n"
+                      f"User:            {client.username}\n"
+                      f"IP Address:      {client.address[0]}\n"
+                      f"Joined at:       {client.connected_since()}\n"
+                      f"Disconnected at: {datetime.now()}"
+                      f"{TextColors.END_C}")
                 # TODO: Disconnect client from server
                 break
 
-    def _client_thread(self, connection, addr):
-        # sends a message to the client whose user object is conn
-        msg = ChatPayload()
-        msg.text_payload = "Bem Vindo ao Chat"
-        msg.by = "Server"
-        connection.send(pickle.dumps(msg))
-
-        while True:
+    # Broadcast a message to all clients
+    def _broadcast(self, payload: ChatPayload):
+        for client in self._list_of_clients:
             try:
-                message = connection.recv(2048)
-                if message:
-
-                    """prints the message and address of the
-                    user who just sent the message on the server
-                    terminal"""
-                    print("<" + addr[0] + "> " + message)
-
-                    # Calls broadcast function to send message to all
-                    message_to_send = "<" + addr[0] + "> " + message
-                    self._broadcast(message_to_send)
-
-                else:
-                    """message may have no content if the connection
-                    is broken, in this case we remove the connection"""
-                    self._remove(connection)
+                client.send(payload)
             except Exception as e:
                 print(f"[{datetime.now()}] Exception Detected: {e}")
                 continue
 
-    """The following function simply removes the object
-    from the list that was created at the beginning of
-    the program
+    def _send_list_of_users(self, clients: User):
+        payload = ChatPayload()
+        payload.by = "Server"
+        payload.username = "Server"
+        users_list = ""
+        for clients_conn in self._list_of_clients:
+            users_list += f"{clients_conn} @ {self._list_of_clients[clients_conn].hostname}\n"
+        payload.text_payload = f"{len(self._list_of_clients)} user(s) available:\n{users_list}"
+        clients.send(payload)
 
-    def _remove(self, connection):
-        if connection in self._list_of_clients:
-            self._list_of_clients.remove(connection)
-            """
-
-    def loop(self):
-        print(f"[{datetime.now()}] Server On")
-        start_new_thread(timer, ())
-        while True:
-            """Accepts a connection request and stores two parameters,
-                conn which is a socket object for that user, and addr
-                which contains the IP address of the client that just
-                connected"""
-            self._connection, address = self._socket.accept()
-
-            """Maintains a list of clients for ease of broadcasting
-            a message to all available people in the chatroom"""
-            self._list_of_clients.append(self._connection)
-
-            # prints the address of the user that just connected
-            print(f"[{datetime.now()}] {address[0]} connection has been established")
-
-            # creates and individual thread for every user
-            # that connects
-            start_new_thread(self._client_thread, (self._connection, address))
+    def _conn_with_user(self, client: User, user_to_connect_with: str):
+        payload = ChatPayload()
+        payload.by = "Server"
+        payload.username = "Server"
+        try:
+            self._list_of_clients[user_to_connect_with].sending_to = str
+            payload.text_payload = f"Chatting with {user_to_connect_with}"
+            client.send(payload)
+        except Exception as e:
+            print(f"[{datetime.now()}] Exception Detected: {e}")
+            payload.text_payload = f"{user_to_connect_with} is not available"
+            client.send(payload)
 
     def __del__(self):
         try:

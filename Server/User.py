@@ -1,13 +1,16 @@
 import pickle
 from datetime import datetime
-from Controllers.ChatPayload import ChatPayload
+from ChatPayload import ChatPayload
 
 
 class User:
     def __init__(self, connection: tuple, connection_time: datetime):
+        self.hostname = None
+        self.sending_msgs_to = None
         self.connection, self.address = connection
-        self.nickname = None
+        self.username = None
         self._connected_since = connection_time
+
         # Check if it's a IPV4 or IPV6 connection
         if len(self.address) > 2:
             self.is_ipv6 = True
