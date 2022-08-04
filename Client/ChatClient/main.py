@@ -1,17 +1,10 @@
 from tkinter import simpledialog
 from Chat_Client import ChatClient
-import GUI
-from GUI import *
-from rich.console import Console
-from rich.columns import Columns
-from rich.panel import Panel
-from rich.panel import Panel
-import rich
+import tkinter as tk
+from tkinter import messagebox
 
 if __name__ == "__main__":
     root = tk.Tk()
-    console = Console()
-    print(Panel("Hello, [red]World!", title="Welcome", subtitle="Thank you"))
     username = simpledialog.askstring("Username", "What is your username?")
     client = ChatClient(username)
     client.username = username
