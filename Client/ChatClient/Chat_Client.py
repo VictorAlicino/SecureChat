@@ -1,6 +1,12 @@
 import socket
 import pickle
 import threading
+import sys
+import time
+import rich
+from rich.console import Console
+from rich.columns import Columns
+from rich.panel import Panel
 from datetime import datetime
 import GUI
 from ChatPayload import ChatPayload
@@ -8,6 +14,7 @@ from ChatPayload import ChatPayload
 
 class ChatClient:
     def __init__(self, username: str):
+        console = Console()
         self.username = username
         self._server = None
         self.server_ip_addr = ""
@@ -34,15 +41,22 @@ class ChatClient:
 
     def recv_loop(self):
         while True:
-            received_bytes = self._server.recv(1024)
-            received_object = pickle.loads(received_bytes)
-            print(f"[{received_object.message_time}] <<{received_object.username}>> {received_object.text_payload}")
+            try:
+                received_bytes = self._server.recv(1024)
+                received_object = pickle.loads(received_bytes)
+                print(f"[{received_object.message_time}] <<{received_object.username}>> "
+                      f"{received_object.text_payload}")
+            except OSError as e:
+                print(f"[{datetime.now()}] {e}")
+                print(f"[{datetime.now()}] Disconnected from Server")
+                exit(1)
+            except Exception as e:
+                print(f"[{datetime.now()}] {e}")
 
     def send_loop(self):
         while True:
             msg = ChatPayload()
-            msg.text_payload = input(">> ")
+            msg.text_payload = input()
             msg.username = self.username
             msg.by = socket.gethostname()
             self._server.send(pickle.dumps(msg))
-

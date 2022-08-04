@@ -30,14 +30,17 @@ def timer():
 
 
 def process_received_message(msg: str):
-    if msg.startswith("/help "):
-        return 1
-    if msg.startswith("/disconnect "):
-        return 2
-    if msg.startswith("/users "):
-        return 3
-    if msg.startswith("/connectwith "):
-        return 4
+    if msg.startswith("/"):
+        if msg.startswith("/help"):
+            return 1
+        elif msg.startswith("/disconnect"):
+            return 2
+        elif msg.startswith("/users"):
+            return 3
+        elif msg.startswith("/connectwith"):
+            return 4
+        else:
+            return -1
     else:
         return 0
 
@@ -104,17 +107,40 @@ class Server:
                 recv_payload.username = client.username
                 message = recv_payload.get_message()
 
-                if process_received_message(message) == 3:
+                message_code = process_received_message(message)
+
+                if message_code == -1:
+                    payload = ChatPayload()
+                    payload.by = "Server"
+                    payload.username = "Server"
+                    payload.text_payload = f"\"{message[1:]}\" is not a valid command"
+                    client.send(payload)
+                elif message_code == 3:
                     self._send_list_of_users(client)
                     print(f"[{datetime.now()}] Sending list of users to {client.hostname}@{client.address[0]} "
                           f"aka {client.username}")
-                if process_received_message(message) == 4:
-                    user_to_connect_with = message.split(" ")[1]
-                    self._conn_with_user(client, user_to_connect_with)
-                    print(f"[{datetime.now()}] Connecting {client.hostname} with user_to_connect_with"
-                          f"aka {client.username}")
+                elif message_code == 4:
+                    try:
+                        user_to_connect_with = message.split(" ")[1]
+                        print(f"[{datetime.now()}] Connecting {client.hostname} with {user_to_connect_with} "
+                              f"aka {client.username}")
+                        self._conn_with_user(client, user_to_connect_with)
+                    except Exception as e:
+                        raise e
                 else:
-                    print(f"[{datetime.now()}] User {recv_payload.username} says: {recv_payload.get_message()}")
+                    if client.sending_msgs_to is not None:
+                        print(f"[{datetime.now()}] User {recv_payload.username} says: {recv_payload.get_message()}")
+                        try:
+                            self._broadcast_to_dest(recv_payload, client)
+                        except Exception as e:
+                            raise e
+                    else:
+                        payload = ChatPayload()
+                        payload.by = "Server"
+                        payload.username = "Server"
+                        payload.text_payload = "[Error: You're not connect with anyone]\nType /users for see " \
+                                               "active users"
+                        client.send(payload)
 
                 #self._broadcast(recv_payload)
             except Exception as e:
@@ -125,6 +151,7 @@ class Server:
                       f"Joined at:       {client.connected_since()}\n"
                       f"Disconnected at: {datetime.now()}"
                       f"{TextColors.END_C}")
+                del self._list_of_clients[client.username]
                 # TODO: Disconnect client from server
                 break
 
@@ -136,6 +163,13 @@ class Server:
             except Exception as e:
                 print(f"[{datetime.now()}] Exception Detected: {e}")
                 continue
+
+    def _broadcast_to_dest(self, payload: ChatPayload, sender: User):
+        try:
+            self._list_of_clients[sender.sending_msgs_to].send(payload)
+            sender.send(payload)
+        except Exception as e:
+            print(f"[{datetime.now()}] Exception Detected: {e}")
 
     def _send_list_of_users(self, clients: User):
         payload = ChatPayload()
@@ -152,19 +186,31 @@ class Server:
         payload.by = "Server"
         payload.username = "Server"
         try:
-            self._list_of_clients[user_to_connect_with].sending_to = str
-            payload.text_payload = f"Chatting with {user_to_connect_with}"
+            user = self._list_of_clients[client.username]
+            user.sending_msgs_to = user_to_connect_with
+            self._list_of_clients.update({client.username: user})
+            payload.text_payload = f"You are now connected with {user_to_connect_with} @ " \
+                                   f"{self._list_of_clients[user_to_connect_with].hostname}"
+            self._print_clients_connections()
             client.send(payload)
         except Exception as e:
             print(f"[{datetime.now()}] Exception Detected: {e}")
             payload.text_payload = f"{user_to_connect_with} is not available"
             client.send(payload)
 
+    def _print_clients_connections(self):
+        print(f"[{datetime.now()}] Clients connections:")
+        for client in self._list_of_clients:
+            a = self._list_of_clients[client]
+            if a.sending_msgs_to is None:
+                print(f"{a.username}@{a.hostname} -> None")
+            else:
+                b = self._list_of_clients[a.sending_msgs_to]
+                print(f"{a.username}@{a.hostname} -> {b.username}@{b.hostname}")
+
     def __del__(self):
         try:
-            self._connection.close()
             print(f"[{datetime.now()}] Connection Closed")
-            self._socket.close()
             print(f"[{datetime.now()}] Server Closed")
         except Exception as e:
             print(f"[{datetime.now()}] Exception Detected: {e}")
