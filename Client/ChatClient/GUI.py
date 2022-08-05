@@ -1,5 +1,6 @@
 from datetime import datetime
 import socket
+import keyboard
 from rich.align import Align
 from rich.panel import Panel
 from rich.table import Table
@@ -68,12 +69,12 @@ def active_users_panel(users: str) -> Panel:
     return message_panel
 
 
-def input_section() -> Panel:
+def input_section(buffer: str) -> Panel:
     input_table = Table.grid(expand=True)
     input_table.add_column(justify="left", ratio=1)
     input_table.add_column(justify="right", ratio=1)
     input_table.add_row(
-        f">> Type your message...",
+        f">> {buffer}",
         f"Enter to Send"
     )
     input_box = Panel(

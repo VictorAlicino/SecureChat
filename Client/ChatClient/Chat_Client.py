@@ -4,6 +4,7 @@ import threading
 from rich.console import Console
 from datetime import datetime
 from rich.live import Live
+import keyboard
 import GUI
 from ChatPayload import ChatPayload
 
@@ -38,10 +39,10 @@ class ChatClient:
                                                            f"{received_object.get_message()}",
                                                            self._connected_with))
         self.layout["side"].update(GUI.active_users_panel("None active users"))
-        self.layout["footer"].update(GUI.input_section())
+        self.layout["footer"].update(GUI.input_section(" Write your message here..."))
 
         gui_thread = threading.Thread(target=self.recv_loop).start()
-        recv_thread = threading.Thread(target=self.send_loop()).start()
+        recv_thread = threading.Thread(target=self.send_loop).start()
         return self._server
 
     def recv_loop(self):
@@ -60,9 +61,17 @@ class ChatClient:
                     print(f"[{datetime.now()}] {e}")
 
     def send_loop(self):
-        while True:
-            msg = ChatPayload()
-            msg.text_payload = input()
-            msg.username = self.username
-            msg.by = socket.gethostname()
-            self._server.send(pickle.dumps(msg))
+        msg = ChatPayload()
+        msg.by = socket.gethostname()
+        msg.text_payload = ""
+        msg.username = self.username
+        with Live(self.layout, screen=True, redirect_stderr=False) as live:
+            while True:
+                key = keyboard.read_key()
+                msg.text_payload += key
+                self.layout["footer"].update(GUI.input_section(msg.text_payload))
+                if key == "enter":
+                    self._server.send(pickle.dumps(msg))
+                    msg.text_payload = ""
+                if key == "backspace":
+                    msg.text_payload = msg.text_payload[:-1]
