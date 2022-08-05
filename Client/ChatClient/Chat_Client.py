@@ -39,7 +39,7 @@ class ChatClient:
                                                            f"{received_object.get_message()}",
                                                            self._connected_with))
         self.layout["side"].update(GUI.active_users_panel("None active users"))
-        self.layout["footer"].update(GUI.input_section(" Write your message here..."))
+        self.layout["footer"].update(GUI.input_section("Write your message here..."))
 
         gui_thread = threading.Thread(target=self.recv_loop).start()
         recv_thread = threading.Thread(target=self.send_loop).start()
@@ -65,13 +65,14 @@ class ChatClient:
         msg.by = socket.gethostname()
         msg.text_payload = ""
         msg.username = self.username
-        with Live(self.layout, screen=True, redirect_stderr=False) as live:
-            while True:
-                key = keyboard.read_key()
-                msg.text_payload += key
-                self.layout["footer"].update(GUI.input_section(msg.text_payload))
-                if key == "enter":
-                    self._server.send(pickle.dumps(msg))
-                    msg.text_payload = ""
-                if key == "backspace":
-                    msg.text_payload = msg.text_payload[:-1]
+        while True:
+            key = keyboard.read_key()
+            msg.text_payload += key
+            self.layout["footer"].update(GUI.input_section(msg.text_payload))
+            if key == "enter":
+                self._server.send(pickle.dumps(msg))
+                msg.text_payload = ""
+                continue
+            if key == "backspace":
+                msg.text_payload = msg.text_payload[:-1]
+                continue
