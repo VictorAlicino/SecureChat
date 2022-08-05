@@ -40,7 +40,7 @@ class Header:
         return Panel(grid, style="white")
 
 
-def messages_panel(message:str, ip_connected: str) -> Panel:
+def messages_panel(message: str, ip_connected: str) -> Panel:
     """Creates the message panel."""
     message_panel = Panel(
         Align.left(
@@ -49,6 +49,21 @@ def messages_panel(message:str, ip_connected: str) -> Panel:
         ),
         box=box.ROUNDED,
         title=f"[b blue]Connected with {ip_connected}",
+        border_style="bright_blue",
+    )
+    return message_panel
+
+
+def messages_panel_helper() -> Panel:
+    """Creates the message panel."""
+    message_panel = Panel(
+        Align.center(
+            f"To connect to another user type: /connectwith <username>\n"
+            f"For more commands type /help",
+            vertical="middle",
+        ),
+        box=box.ROUNDED,
+        title=f"[b blue]Connected with No One",
         border_style="bright_blue",
     )
     return message_panel

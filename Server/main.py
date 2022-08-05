@@ -1,19 +1,22 @@
 import socket
 import os
+from rich.console import Console
+from rich.prompt import Prompt, IntPrompt, Confirm
 from Server import Server
 
 if __name__ == "__main__":
-    print("Welcome to secure Chat Server by Alicino")
+    console = Console()
+    console.rule("[bold blue] Secure Chat Server")
     target_ip = None
     target_port = None
 
+    # Get the host machine information
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
-    print(f"The Server IP Address is: {local_ip}")
-    print(f"The Hostname is: {hostname}")
+    console.print(f"[bold white] The Server IP Address is: {local_ip}")
+    console.print(f"[bold white] The Server Hostname is: {hostname}")
 
-    print(f"\nWould you like to setup the Chat on this IP Address ({local_ip})? [Y/N]")
-    choice1 = input()
+    choice1 = Confirm.ask(f"Would you like to setup the Chat on this IP Address ({local_ip})?")
     if choice1 == "N":
         target_ip = input("Type the IP Address you would like to run the application on: ")
     else:
@@ -21,6 +24,7 @@ if __name__ == "__main__":
 
     target_port = int(input("Which Port the application will run on: "))
 
+    # Create the server object
     server = Server(local_ip, target_port)
-    server.receive()
+    server.accept_clients()
 

@@ -34,3 +34,4 @@ class User:
 
     def connected_since(self) -> str:
         return self._connected_since.strftime("%d/%m/%Y %H:%M:%S")
+
