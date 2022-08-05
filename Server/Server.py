@@ -2,24 +2,12 @@ import pickle
 import socket
 import threading
 import time
+import ssl
 from rich.console import Console
 from rich.table import Table
 from datetime import datetime
 from ChatPayload import ChatPayload
 from User import User
-from _thread import *
-
-
-class TextColors:
-    HEADER = '\033[95m'
-    OK_BLUE = '\033[94m'
-    OK_CYAN = '\033[96m'
-    OK_GREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    END_C = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 
 # When I write this function, only God and I know what it does.
@@ -56,21 +44,33 @@ verbose_mode = False
 
 
 class Server:
+
     def __init__(self, ip_address: str, port: int):
         # Setting variables
         self._ip_address = ip_address
         self._port = port
         self._list_of_clients = {}
         self._connection = None
+        self.secure = True
         self.console = Console()
 
-        # Start the Server
+        # TLS Setup
+        # Creating the Context
+        self.context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        self.context.verify_mode = ssl.CERT_REQUIRED
+        self.console.log("[bold blue]<<TLS>>[white] --> [TLS Enabled]", style="bold white")
+        self.context.load_verify_locations("../Certs/ClientCerts/cert.pem")
+        self.context.load_cert_chain("../Certs/ServerCerts/cert.pem", "../Certs/ServerCerts/key.pem")
+        self.console.log("[bold blue]<<TLS>>[white] --> [Certificate Loaded]", style="bold white")
+        self.console.log("Server is Secured by TLS v1.2", style="bold green")
+        self.context.keylog_filename = "keylog.txt"
+
+        # Creating the Socket
         self.console.log(f"Starting Server on {self._ip_address}:{self._port}", style="blue")
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         # Bind the socket to the port
-        self.console.log(f"Binding IP and Port")
         self._socket.bind((ip_address, port))
 
         # Start listening for connections
@@ -79,10 +79,10 @@ class Server:
         self.console.log(f"Server Started", style="green")
 
         # Creates a User for the Server broadcast messages
-        Server = User((None, self._ip_address), datetime.now())
-        Server.username = "Server"
-        Server.hostname = "Host"
-        self._list_of_clients["Server"] = Server
+        server = User((None, self._ip_address), datetime.now())
+        server.username = "Server"
+        server.hostname = "Host"
+        self._list_of_clients["Server"] = server
 
     # When a client connects, this function is called
     def accept_clients(self):
@@ -91,8 +91,17 @@ class Server:
 
             # Accept the connection
             connection = self._socket.accept()
+            # TLS Encryption
+            try:
+                tls_connection = self.context.wrap_socket(connection[0], server_side=True)
+            except Exception as e:
+                self.console.log("Exception Detected:", style="bold red")
+                self.console.print_exception(width=0)
+                continue
+
             # Build a new User object
-            new_user = User(connection, datetime.now())
+            new_user = User((tls_connection, connection[1]), datetime.now())
+            new_user.tls_connection = tls_connection
             self.console.log(f"Connected with: {new_user.address[0]}: {new_user.address[1]}", style="bold white")
 
             # Building the server response message
@@ -180,7 +189,7 @@ class Server:
                     if client.sending_msgs_to is not None:
                         # If the client is connected to the server, the message is sent to destination
                         if client.sending_msgs_to != "Server":
-                            self.console.log(f"[{recv_payload.hostname}] --> [{client.sending_msgs_to}]")
+                            self.console.log(f"[{recv_payload.username}] --> [{client.sending_msgs_to}]")
                             try:
                                 self._broadcast_to_dest(recv_payload, client)
                             except Exception as e:
@@ -204,7 +213,7 @@ class Server:
             # Handling any exception as a true graduation student, not specifying any of them
             except Exception as e:
                 self.console.log("Exception Detected:", style="bold red")
-                self.console.print_exception()
+                self.console.print_exception(width=0)
 
                 # Prints the User's Connection information
                 user_data_table = Table(title=f"CONNECTION WITH {client.username} WAS FORCED TO BROKE",
