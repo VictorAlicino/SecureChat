@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     # Get the host machine information
     hostname = socket.gethostname()
-    local_ip = socket.gethostbyname(hostname)
+    local_ip = socket.gethostbyname('localhost')
     console.print(f"[bold white] The Server IP Address is: {local_ip}")
     console.print(f"[bold white] The Server Hostname is: {hostname}")
 
