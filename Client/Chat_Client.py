@@ -25,7 +25,7 @@ def parse_file(filename: str):
         return f.read()
 
 def file_recv(file, sender:str):
-    with open(f"{sender}-{file.format_name}", "wb") as f:
+    with open(f"{sender}-{datetime.now}-{file.format_name}", "wb") as f:
         f.write(file.raw_byte)
 
 
@@ -102,9 +102,6 @@ class ChatClient:
                                       f"{received_object.text_payload[26:received_object.text_payload.find('@')]}")
                 if select == 2:
                     try:
-                        size = 1024 + int(received_object.text_payload[15:])
-                        received_bytes = self._server.recv(size)
-                        received_object = pickle.loads(received_bytes)
                         file_recv(received_object, received_object.by)
                         print(f"[{received_object.message_time}] <<{received_object.username}>> "
                               f"[bold white] File of type {received_object.format_name} received")
