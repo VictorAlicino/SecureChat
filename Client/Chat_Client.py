@@ -26,7 +26,7 @@ def parse_file(filename: str):
 
 def file_recv(file, sender:str):
     with open(f"{sender}-{file.format_name}", "wb") as f:
-        f.write(file.raw_bytes)
+        f.write(file.raw_byte)
 
 
 class ChatClient:
