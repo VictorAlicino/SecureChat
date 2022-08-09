@@ -107,7 +107,7 @@ class ChatClient:
                         print(received_object)
                         file_recv(received_object, received_object.by)
                         print(f"[{received_object.message_time}] <<{received_object.username}>> "
-                              f"[bold white] File of type {received_object.format_name} received")
+                              f"File of type {received_object.format_name} received", style="bold white")
                     except Exception as e:
                         raise e
             except OSError as e:
@@ -135,6 +135,10 @@ class ChatClient:
                     msg.raw_byte = file_temp1
                     msg.format_name = pathlib.Path(directory).suffix
                     self._server.send(pickle.dumps(msg))
+                    msg.text_payload = ""
+                    msg.raw_byte = None
+                    msg.format_name = None
+                    continue
                 except Exception as e:
                     sys.stdout.write("\033[1A[\033[2K") # Clear the input line
                     self.console.print(f"Unvalid file path: [ {msg.text_payload[10:]} ]", style="bold red")
@@ -146,8 +150,6 @@ class ChatClient:
                 self._server.send(pickle.dumps(msg))
                 self._server.close()
                 exit(1)
-            msg.raw_byte = ""
-            msg.format_name = ""
             sys.stdout.write("\033[1A[\033[2K") # Clear the input line
             # self.layout["footer"].update(GUI.input_section(msg.text_payload))
             self._server.send(pickle.dumps(msg))
