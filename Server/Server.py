@@ -187,7 +187,7 @@ class Server:
 
                 # Client is sending an file
                 elif message_code == 6:
-                    print("CLIET IN SENDING A FILE")
+                    self.console.log(f"[{recv_payload.username}] --> [{client.sending_msgs_to}]")
                     size = 1024 + int(recv_payload.text_payload[15:]) # Get the size of the file
                     recv_payload = client.connection.recv(size)
                     recv_payload = pickle.loads(recv_payload)

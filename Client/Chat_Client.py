@@ -25,7 +25,7 @@ def parse_file(filename: str):
         return f.read()
 
 def file_recv(file, sender:str):
-    with open(f"/Downloads/{sender}-{datetime.now()}{file.format_name}", "wb") as f:
+    with open(f"{sender}-{datetime.now()}{file.format_name}", "wb") as f:
         f.write()
 
 
