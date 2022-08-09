@@ -25,7 +25,7 @@ def parse_file(filename: str):
         return f.read()
 
 def file_recv(file, sender:str):
-    with open(f"{sender}-{datetime.now()}-{file.format_name}", "wb") as f:
+    with open(f"{sender}-{datetime.now()}.{file.format_name}", "wb") as f:
         f.write(file.raw_byte)
 
 
@@ -129,7 +129,6 @@ class ChatClient:
                         raise Exception("File not found")
                     file_temp1 = parse_file(directory)
                     msg.text_payload = f"/file_transfer {len(file_temp1)}"
-                    print(msg)
                     self._server.send(pickle.dumps(msg))
                     msg.raw_byte = file_temp1
                     msg.format_name = pathlib.Path(directory).suffix
