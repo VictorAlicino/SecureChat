@@ -26,7 +26,8 @@ def parse_file(filename: str):
 
 def file_recv(file, sender:str):
     by = sender.replace(".", "_")
-    with open(f"{by}-{datetime.now().isoformat(timespec='seconds')}{file.format_name}", "wb") as f:
+    time = datetime.now().isoformat(timespec='seconds').replace(":", "_")
+    with open(f"{by}-{time}{file.format_name}", "wb") as f:
         f.write(file.raw_byte)
 
 
