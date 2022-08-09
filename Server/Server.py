@@ -189,9 +189,7 @@ class Server:
                 elif message_code == 6:
                     self.console.log(f"[{recv_payload.username}] --> [{client.sending_msgs_to}]")
                     size = 1024 + int(recv_payload.text_payload[15:]) # Get the size of the file
-                    recv_payload = client.connection.recv(size)
-                    recv_payload = pickle.loads(recv_payload)
-
+                    
                     if verbose_mode:
                         print(recv_payload) # Only for DEBUG purposes
 
@@ -324,12 +322,7 @@ class Server:
             if client.sending_msgs_to != "Server":
                 self.console.log(f"[{payload.username}] --> [{client.sending_msgs_to}]")
                 try:
-                    temp1 = ChatPayload()
-                    temp1.by = "Server"
-                    temp1.username = "Server"
-                    temp1.text_payload = f"/file_transfer {size}"
                     dest = self._list_of_clients[client.sending_msgs_to]
-                    dest.send(temp1)
                     dest.send(payload)
 
                     temp2 = ChatPayload()
