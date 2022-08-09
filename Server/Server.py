@@ -331,6 +331,12 @@ class Server:
                     dest = self._list_of_clients[client.sending_msgs_to]
                     dest.send(temp1)
                     dest.send(payload)
+
+                    temp2 = ChatPayload()
+                    temp2.by = "Server"
+                    temp2.username = "Server"
+                    temp2.text_payload = f"File transfer to {client.sending_msgs_to} was successful"
+                    client.send(temp2)
                 except Exception as e:
                     temp2 = ChatPayload()
                     temp2.by = "Server"
