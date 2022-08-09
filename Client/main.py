@@ -2,8 +2,7 @@ from tkinter import simpledialog
 from rich.console import Console
 from Chat_Client import ChatClient
 from rich.prompt import Prompt, IntPrompt, Confirm
-import tkinter as tk
-from tkinter import messagebox
+from tkinter import *
 
 if __name__ == "__main__":
     console = Console()

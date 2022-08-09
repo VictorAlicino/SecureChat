@@ -2,17 +2,31 @@ import socket
 import pickle
 import threading
 import sys
+import os
 import ssl
 from rich.console import Console
 from datetime import datetime
 from ChatPayload import ChatPayload
+from tkinter import *
+from tkinter import filedialog
+import pathlib
 
 
-def process_message_rcv(message: str):
-    if message.startswith("You are now connected with "):
+def process_message_rcv(message: ChatPayload):
+    if message.text_payload.startswith("You are now connected with "):
         return 1
+    if message.text_payload.startswith("/file_transfer "):
+        return 2
     else:
-        return 0
+        return 0           
+    
+def parse_file(filename: str):
+    with open(filename, "rb") as f:
+        return f.read()
+
+def file_recv(file, sender:str):
+    with open(f"/Downloads/{sender}-{datetime.now()}{file.format_name}", "wb") as f:
+        f.write()
 
 
 class ChatClient:
@@ -76,9 +90,9 @@ class ChatClient:
     def recv_loop(self):
         while True:
             try:
-                received_bytes = self._server.recv(1024)
+                received_bytes = self._server.recv(1073741824)
                 received_object = pickle.loads(received_bytes)
-                select = process_message_rcv(received_object.text_payload)
+                select = process_message_rcv(received_object)
 
                 if select == 0:
                     print(f"[{received_object.message_time}] <<{received_object.username}>> "
@@ -86,6 +100,16 @@ class ChatClient:
                 if select == 1:
                     self.console.rule(f"[bold green] Connected to "
                                       f"{received_object.text_payload[26:received_object.text_payload.find('@')]}")
+                if select == 2:
+                    try:
+                        size = 1024 + int(received_object.text_payload[15:])
+                        received_bytes = self._server.recv(size)
+                        received_object = pickle.loads(received_bytes)
+                        file_recv(received_object, received_object.by)
+                        print(f"[{received_object.message_time}] <<{received_object.username}>> "
+                              f"[bold white] File of type {received_object.format_name} received")
+                    except Exception as e:
+                        raise e
             except OSError as e:
                 print(f"[{datetime.now()}] {e}")
                 print(f"[{datetime.now()}] Disconnected from Server")
@@ -100,11 +124,37 @@ class ChatClient:
         msg.by = socket.gethostname()
         while True:
             msg.text_payload += input()
+            # Send Files
+            if msg.text_payload.startswith("/sendfile"):
+                try:
+                    directory = os.path.basename(msg.text_payload[10:])
+                    if not os.path.isfile(directory):
+                        raise Exception("File not found")
+                    file_temp1 = parse_file(directory)
+                    msg.text_payload = f"/file_transfer {len(file_temp1)}"
+                    print(msg)
+                    self._server.send(pickle.dumps(msg))
+                    msg.raw_byte = file_temp1
+                    msg.format_name = pathlib.Path(directory).suffix
+                    self._server.send(pickle.dumps(msg))
+                except Exception as e:
+                    # DEBUG
+                    print(e)
+                    self.console.print_exception()
+                    # DEBUG
+                    sys.stdout.write("\033[1A[\033[2K") # Clear the input line
+                    self.console.print(f"Unvalid file path: [ {msg.text_payload[10:]} ]", style="bold red")
+                    msg.raw_byte = None
+                    msg.format_name = None
+                    msg.text_payload = ""
+                    continue
             if msg.text_payload.startswith("/exit"):
                 self._server.send(pickle.dumps(msg))
                 self._server.close()
                 exit(1)
-            sys.stdout.write("\033[1A[\033[2K")
+            msg.raw_byte = ""
+            msg.format_name = ""
+            sys.stdout.write("\033[1A[\033[2K") # Clear the input line
             # self.layout["footer"].update(GUI.input_section(msg.text_payload))
             self._server.send(pickle.dumps(msg))
             msg.text_payload = ""

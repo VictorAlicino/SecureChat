@@ -17,7 +17,7 @@ if __name__ == "__main__":
     console.print(f"[bold white] The Server Hostname is: {hostname}")
 
     choice1 = Confirm.ask(f"Would you like to setup the Chat on this IP Address ({local_ip})?")
-    if choice1 == "N":
+    if not choice1:
         target_ip = input("Type the IP Address you would like to run the application on: ")
     else:
         target_ip = local_ip

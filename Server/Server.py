@@ -34,6 +34,8 @@ def process_received_message(msg: str):
             return 4
         elif msg.startswith("/exit"):
             return 5
+        elif msg.startswith("/file_transfer "):
+            return 6
         else:
             return -1
     else:
@@ -71,7 +73,7 @@ class Server:
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         # Bind the socket to the port
-        self._socket.bind((ip_address, port))
+        self._socket.bind(("0.0.0.0", port))
 
         # Start listening for connections
         self.console.log(f"Listening on port: {self._port}", style="blue")
@@ -140,7 +142,7 @@ class Server:
     def _handle(self, client: User):
         while True:
             try:
-                recv_payload = client.connection.recv(2048)
+                recv_payload = client.connection.recv(1073741824)
                 recv_payload = pickle.loads(recv_payload)
                 if verbose_mode:
                     print(recv_payload) # Only for DEBUG purposes
@@ -183,6 +185,20 @@ class Server:
                     self._print_clients_connections()
                     break # End the thread
 
+                # Client is sending an file
+                elif message_code == 6:
+                    print("CLIET IN SENDING A FILE")
+                    size = 1024 + int(recv_payload.text_payload[15:]) # Get the size of the file
+                    recv_payload = client.connection.recv(size)
+                    recv_payload = pickle.loads(recv_payload)
+
+                    if verbose_mode:
+                        print(recv_payload) # Only for DEBUG purposes
+
+                    # Signed the payload with the origin client's username
+                    recv_payload.username = client.username
+                    message = recv_payload.get_message()
+                    self._file_transfer(recv_payload, client, size)
                 # Message is not a command
                 else:
                     # If client is not connected to anyone, a warning is sent
@@ -213,7 +229,7 @@ class Server:
             # Handling any exception as a true graduation student, not specifying any of them
             except Exception as e:
                 self.console.log("Exception Detected:", style="bold red")
-                self.console.print_exception(width=0)
+                self.console.print_exception()
 
                 # Prints the User's Connection information
                 user_data_table = Table(title=f"CONNECTION WITH {client.username} WAS FORCED TO BROKE",
@@ -299,6 +315,43 @@ class Server:
                 b = self._list_of_clients[a.sending_msgs_to]
                 connections_table.add_row(f"{a.username}@{a.hostname}", f"{b.username}@{b.hostname}")
         self.console.print(connections_table)
+
+    # Client is sending a file
+    def _file_transfer(self, payload: ChatPayload, client: User, size: int):
+        # If client is not connected to anyone, a warning is sent
+        if client.sending_msgs_to is not None:
+            # If the client is not connected to the server, the message is sent to destination
+            if client.sending_msgs_to != "Server":
+                self.console.log(f"[{payload.username}] --> [{client.sending_msgs_to}]")
+                try:
+                    temp1 = ChatPayload()
+                    temp1.by = "Server"
+                    temp1.username = "Server"
+                    temp1.text_payload = f"/file_transfer {size}"
+                    dest = self._list_of_clients[client.sending_msgs_to]
+                    dest.send(temp1)
+                    dest.send(payload)
+                except Exception as e:
+                    temp2 = ChatPayload()
+                    temp2.by = "Server"
+                    temp2.username = "Server"
+                    temp2.text_payload = f"File transfer to {client.sending_msgs_to} failed"
+                    client.send(temp2)
+            # If the client is connected to the server transfers are not allowed
+            else:
+                payload = ChatPayload()
+                payload.by = "Server"
+                payload.username = "Server"
+                payload.text_payload = "[Error: You're not allowed to send files in broadcast mode]"
+                client.send(payload)
+        # Sent warning, client is not connected to anyone
+        else:
+            payload = ChatPayload()
+            payload.by = "Server"
+            payload.username = "Server"
+            payload.text_payload = "[Error: You're not connect with anyone]\nType /users for see " \
+                                   "active users"
+            client.send(payload)
 
     # Destructor
     def __del__(self):
