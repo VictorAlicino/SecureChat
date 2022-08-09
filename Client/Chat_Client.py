@@ -102,6 +102,7 @@ class ChatClient:
                                       f"{received_object.text_payload[26:received_object.text_payload.find('@')]}")
                 if select == 2:
                     try:
+                        print(received_object)
                         file_recv(received_object, received_object.by)
                         print(f"[{received_object.message_time}] <<{received_object.username}>> "
                               f"[bold white] File of type {received_object.format_name} received")
@@ -129,7 +130,6 @@ class ChatClient:
                         raise Exception("File not found")
                     file_temp1 = parse_file(directory)
                     msg.text_payload = f"/file_transfer {len(file_temp1)}"
-                    self._server.send(pickle.dumps(msg))
                     msg.raw_byte = file_temp1
                     msg.format_name = pathlib.Path(directory).suffix
                     self._server.send(pickle.dumps(msg))
