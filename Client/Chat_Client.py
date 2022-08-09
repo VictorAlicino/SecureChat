@@ -25,7 +25,7 @@ def parse_file(filename: str):
         return f.read()
 
 def file_recv(file, sender:str):
-    with open(f"{sender}-{datetime.now()}{file.format_name}", "wb") as f:
+    with open(r"{sender}-{datetime.now()}{file.format_name}", "wb") as f:
         f.write()
 
 
@@ -138,10 +138,6 @@ class ChatClient:
                     msg.format_name = pathlib.Path(directory).suffix
                     self._server.send(pickle.dumps(msg))
                 except Exception as e:
-                    # DEBUG
-                    print(e)
-                    self.console.print_exception()
-                    # DEBUG
                     sys.stdout.write("\033[1A[\033[2K") # Clear the input line
                     self.console.print(f"Unvalid file path: [ {msg.text_payload[10:]} ]", style="bold red")
                     msg.raw_byte = None
